@@ -14,6 +14,10 @@ async def get_forecast(lat: float, lon: float) -> dict | None:
         print("Missing WEATHER_API_KEY")
         return None
 
+    # Note: openweathermap /forecast endpoint doesn't return sunrise/sunset. 
+    # To get sunrise/sunset we technically need the /weather endpoint too, 
+    # but we can try to extract from city data if available, or just omit if not.
+    # The /forecast endpoint DOES return city.sunrise and city.sunset!
     url = f"https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={WEATHER_API_KEY}&units=metric&lang=ro"
 
     async with aiohttp.ClientSession() as session:
@@ -25,6 +29,17 @@ async def get_forecast(lat: float, lon: float) -> dict | None:
             else:
                 print(f"Error fetching weather: {response.status} - {await response.text()}")
                 return None
+
+def get_weather_emoji(condition: str) -> str:
+    """Returns a large emoji based on the main weather condition."""
+    condition = condition.lower()
+    if "thunderstorm" in condition: return "🌩️"
+    if "drizzle" in condition: return "🌦️"
+    if "rain" in condition: return "🌧️"
+    if "snow" in condition: return "❄️"
+    if "clear" in condition: return "☀️"
+    if "clouds" in condition or "cloud" in condition: return "☁️"
+    return "🌤️"
 
 def get_clothing_advice(condition: str, temp: float) -> str:
     condition = condition.lower()
@@ -110,20 +125,32 @@ async def format_current_weather(data: dict) -> str:
          return "Nu am putut prelua date despre vreme în acest moment."
 
     current = data["list"][0]
-    temp = current["main"]["temp"]
-    feels_like = current["main"]["feels_like"]
+    temp = round(current["main"]["temp"])
+    feels_like = round(current["main"]["feels_like"])
+    condition_main = current["weather"][0]["main"]
     description = current["weather"][0]["description"].capitalize()
     humidity = current["main"]["humidity"]
     wind_speed = current["wind"]["speed"]
     city_name = data.get("city", {}).get("name", "Locația ta")
+    
+    # Extract sunrise and sunset if available
+    sunrise_ts = data.get("city", {}).get("sunrise")
+    sunset_ts = data.get("city", {}).get("sunset")
+    sunrise_str = datetime.fromtimestamp(sunrise_ts).strftime('%H:%M') if sunrise_ts else "--:--"
+    sunset_str = datetime.fromtimestamp(sunset_ts).strftime('%H:%M') if sunset_ts else "--:--"
+
+    emoji = get_weather_emoji(condition_main)
 
     report = (
-        f"🌡️ **Vremea în {city_name}**\n\n"
-        f"**Condiții:** {description}\n"
-        f"**Temperatura:** {temp}°C (se simte ca {feels_like}°C)\n"
-        f"**Umiditate:** {humidity}%\n"
-        f"**Vânt:** {wind_speed} m/s\n\n"
-        f"💡 **Sfat:** {get_clothing_advice(current['weather'][0]['main'], temp)}"
+        f"{emoji} <b>Vremea în {city_name}</b>\n"
+        f"──────────────\n"
+        f"<b>Condiții:</b> {description}\n"
+        f"<b>Temperatură:</b> {temp}°C <i>(se simte ca {feels_like}°C)</i>\n"
+        f"<b>Umiditate:</b> {humidity}% 💧\n"
+        f"<b>Vânt:</b> {wind_speed} m/s 🌬️\n\n"
+        f"🌅 <b>Răsărit:</b> {sunrise_str}  |  🌇 <b>Apus:</b> {sunset_str}\n\n"
+        f"💡 <i>Sfat:</i> {get_clothing_advice(condition_main, temp)}\n"
+        f"──────────────"
     )
     return report
 
@@ -159,20 +186,87 @@ async def format_tomorrow_weather(data: dict) -> str:
     if not target_item:
         return "Nu s-au găsit date pentru ziua de mâine în prognoză."
 
-    temp = target_item["main"]["temp"]
-    feels_like = target_item["main"]["feels_like"]
+    temp = round(target_item["main"]["temp"])
+    feels_like = round(target_item["main"]["feels_like"])
+    condition_main = target_item["weather"][0]["main"]
     description = target_item["weather"][0]["description"].capitalize()
     humidity = target_item["main"]["humidity"]
     wind_speed = target_item["wind"]["speed"]
     city_name = data.get("city", {}).get("name", "Locația ta")
+    emoji = get_weather_emoji(condition_main)
 
     report = (
-        f"📅 **Vremea mâine în {city_name}**\n\n"
-        f"**Condiții:** {description}\n"
-        f"**Temperatura (la prânz):** {temp}°C (se simte ca {feels_like}°C)\n"
-        f"**Umiditate:** {humidity}%\n"
-        f"**Vânt:** {wind_speed} m/s\n\n"
-        f"💡 **Sfat:** {get_clothing_advice(target_item['weather'][0]['main'], temp)}"
+        f"📅 <b>Prognoza de Mâine ({tomorrow_dt.strftime('%d.%m')})</b>\n"
+        f"📍 <b>{city_name}</b>\n"
+        f"──────────────\n"
+        f"{emoji} <b>Condiții:</b> {description}\n"
+        f"🌡️ <b>Temperatură (La Prânz):</b> {temp}°C <i>(se simte ca {feels_like}°C)</i>\n"
+        f"💧 <b>Umiditate:</b> {humidity}%\n"
+        f"🌬️ <b>Vânt:</b> {wind_speed} m/s\n\n"
+        f"💡 <i>Sfat:</i> {get_clothing_advice(condition_main, temp)}\n"
+        f"──────────────"
     )
+    return report
+
+async def format_3days_weather(data: dict) -> str:
+    """
+    Extracts a summarized forecast for the next 3 days.
+    """
+    if not data or "list" not in data or len(data["list"]) == 0:
+         return "Nu am putut prelua date despre vreme în acest moment."
+
+    from datetime import datetime
+    
+    city_name = data.get("city", {}).get("name", "Locația ta")
+    daily_summaries = {}
+
+    for item in data["list"]:
+        dt_txt = item["dt_txt"]
+        date_obj = datetime.strptime(dt_txt, "%Y-%m-%d %H:%M:%S")
+        date_str = date_obj.strftime("%Y-%m-%d")
+        
+        # Skip today
+        if date_str == datetime.now().strftime("%Y-%m-%d"):
+            continue
+
+        temp = item["main"]["temp"]
+        condition = item["weather"][0]["main"]
+        
+        if date_str not in daily_summaries:
+            # Explicitly type this as a dict for pyright/pyre to understand
+            daily_summaries[date_str] = {
+                "temps": [temp],
+                "conditions": [condition],
+                "date_display": date_obj.strftime("%d.%m")
+            }
+        else:
+            daily_summaries[date_str]["temps"].append(temp)
+            daily_summaries[date_str]["conditions"].append(condition)
+
+        # Stop after 3 future days
+        if len(daily_summaries) > 3:
+            daily_summaries.popitem() # Remove the 4th day that was just added
+            break
+
+    report = f"🗓️ <b>Prognoza pe 3 Zile în {city_name}</b>\n──────────────\n\n"
+
+    days_ro = ["Luni", "Marți", "Miercuri", "Joi", "Vineri", "Sâmbătă", "Duminică"]
+
+    for date_str, summary in daily_summaries.items():
+        min_temp = round(min(summary["temps"]))
+        max_temp = round(max(summary["temps"]))
+        
+        # Get the most common condition for the day to assign the emoji
+        from collections import Counter
+        most_common_condition = Counter(summary["conditions"]).most_common(1)[0][0]
+        emoji = get_weather_emoji(most_common_condition)
+        
+        date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+        day_name = days_ro[date_obj.weekday()]
+
+        report += f"<b>{day_name} ({summary['date_display']})</b> {emoji}\n"
+        report += f"🌡️ {min_temp}°C - {max_temp}°C\n\n"
+
+    report += "──────────────"
     return report
 
