@@ -127,3 +127,52 @@ async def format_current_weather(data: dict) -> str:
     )
     return report
 
+async def format_tomorrow_weather(data: dict) -> str:
+    """
+    Extracts the forecast for tomorrow (around noon if available) and formats it.
+    """
+    if not data or "list" not in data or len(data["list"]) == 0:
+         return "Nu am putut prelua date despre vreme în acest moment."
+
+    from datetime import datetime, timedelta
+    
+    # Calculate tomorrow's date
+    tomorrow_dt = datetime.now() + timedelta(days=1)
+    tomorrow_date_str = tomorrow_dt.strftime("%Y-%m-%d")
+    
+    target_item = None
+    
+    # First priority: Tomorrow at 12:00
+    target_dt_txt = f"{tomorrow_date_str} 12:00:00"
+    for item in data["list"]:
+        if item["dt_txt"] == target_dt_txt:
+            target_item = item
+            break
+            
+    # Second priority: Any time tomorrow
+    if not target_item:
+        for item in data["list"]:
+            if item["dt_txt"].startswith(tomorrow_date_str):
+                target_item = item
+                break
+
+    if not target_item:
+        return "Nu s-au găsit date pentru ziua de mâine în prognoză."
+
+    temp = target_item["main"]["temp"]
+    feels_like = target_item["main"]["feels_like"]
+    description = target_item["weather"][0]["description"].capitalize()
+    humidity = target_item["main"]["humidity"]
+    wind_speed = target_item["wind"]["speed"]
+    city_name = data.get("city", {}).get("name", "Locația ta")
+
+    report = (
+        f"📅 **Vremea mâine în {city_name}**\n\n"
+        f"**Condiții:** {description}\n"
+        f"**Temperatura (la prânz):** {temp}°C (se simte ca {feels_like}°C)\n"
+        f"**Umiditate:** {humidity}%\n"
+        f"**Vânt:** {wind_speed} m/s\n\n"
+        f"💡 **Sfat:** {get_clothing_advice(target_item['weather'][0]['main'], temp)}"
+    )
+    return report
+
