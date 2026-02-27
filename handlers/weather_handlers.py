@@ -213,16 +213,19 @@ def _help_text() -> str:
 
 def _format_alert_settings(user: dict) -> str:
     return (
-        "<b>Setari alerte</b>\n"
-        f"Ploaie: {float(user['rain_mm_3h_threshold']):.1f} mm/3h\n"
-        f"Ninsoare: {float(user['snow_mm_3h_threshold']):.1f} mm/3h\n"
-        f"Vant: {float(user['wind_ms_threshold']):.1f} m/s\n"
-        f"Temp minima: {float(user['min_temp_c_threshold']):.1f}C\n"
-        f"Temp maxima: {float(user['max_temp_c_threshold']):.1f}C\n"
-        f"Cooldown: {int(user['alert_cooldown_minutes'])} minute\n"
-        f"Briefing dimineata: {'ON' if int(user['daily_morning_enabled']) else 'OFF'}\n"
-        f"Briefing seara: {'ON' if int(user['daily_evening_enabled']) else 'OFF'}\n"
-        f"Sever imediat: {'ON' if int(user['severe_immediate_enabled']) else 'OFF'}"
+        "🔔 <b>Setări Alerte Active</b>\n"
+        "━━━━━━━━━━━━━━━━━━\n"
+        f"💧 <b>Ploaie:</b> {float(user['rain_mm_3h_threshold']):.1f} mm/3h\n"
+        f"❄️ <b>Ninsoare:</b> {float(user['snow_mm_3h_threshold']):.1f} mm/3h\n"
+        f"🌬️ <b>Vânt:</b> {float(user['wind_ms_threshold']):.1f} m/s\n"
+        f"🌡️ <b>Temp minimă:</b> {float(user['min_temp_c_threshold']):.1f}°C\n"
+        f"🔥 <b>Temp maximă:</b> {float(user['max_temp_c_threshold']):.1f}°C\n"
+        f"⏱️ <b>Cooldown:</b> {int(user['alert_cooldown_minutes'])} minute\n"
+        f"🌅 <b>Briefing dimineața:</b> {'✅ ON' if int(user['daily_morning_enabled']) else '❌ OFF'}\n"
+        f"🌇 <b>Briefing seara:</b> {'✅ ON' if int(user['daily_evening_enabled']) else '❌ OFF'}\n"
+        f"⚠️ <b>Sever imediat:</b> {'✅ ON' if int(user['severe_immediate_enabled']) else '❌ OFF'}\n"
+        "━━━━━━━━━━━━━━━━━━\n"
+        "<blockquote expand=\"True\">Folosește /alerte <i>parametru=valoare</i> pentru a modifica.</blockquote>"
     )
 
 
@@ -454,18 +457,20 @@ async def cmd_status(message: types.Message) -> None:
     next_evening = _next_window_label(_evening_hour, _evening_minute, tz_name)
 
     text = (
-        "<b>Status cont</b>\n"
-        f"Locatie activa: da ({user['latitude']:.4f}, {user['longitude']:.4f})\n"
-        f"Provider meteo: {provider}\n"
-        f"Ore liniste: {quiet_label}\n"
-        f"Cooldown alerta: {int(user['alert_cooldown_minutes'])} minute\n"
-        f"Prag ploaie: {float(user['rain_mm_3h_threshold']):.1f} mm/3h\n"
-        f"Prag ninsoare: {float(user['snow_mm_3h_threshold']):.1f} mm/3h\n"
-        f"Prag vant: {float(user['wind_ms_threshold']):.1f} m/s\n"
-        f"Temp min/max: {float(user['min_temp_c_threshold']):.1f}C / {float(user['max_temp_c_threshold']):.1f}C\n"
-        f"Briefing dimineata: {'ON' if int(user['daily_morning_enabled']) else 'OFF'} ({next_morning})\n"
-        f"Briefing seara: {'ON' if int(user['daily_evening_enabled']) else 'OFF'} ({next_evening})\n"
-        f"Sever imediat: {'ON' if int(user['severe_immediate_enabled']) else 'OFF'}"
+        "⚙️ <b>Status Funcționare Bot</b>\n"
+        "━━━━━━━━━━━━━━━━━━\n"
+        f"📍 <b>Locație activă:</b> Da ({user['latitude']:.4f}, {user['longitude']:.4f})\n"
+        f"📡 <b>Provider meteo:</b> {provider}\n"
+        f"😴 <b>Ore liniște:</b> {quiet_label}\n"
+        f"⏱️ <b>Cooldown alertă:</b> {int(user['alert_cooldown_minutes'])} minute\n"
+        f"💧 <b>Prag ploaie:</b> {float(user['rain_mm_3h_threshold']):.1f} mm/3h\n"
+        f"❄️ <b>Prag ninsoare:</b> {float(user['snow_mm_3h_threshold']):.1f} mm/3h\n"
+        f"🌬️ <b>Prag vânt:</b> {float(user['wind_ms_threshold']):.1f} m/s\n"
+        f"🌡️ <b>Temp min/max:</b> {float(user['min_temp_c_threshold']):.1f}°C / {float(user['max_temp_c_threshold']):.1f}°C\n"
+        f"🌅 <b>Briefing dimineața:</b> {'✅ ON' if int(user['daily_morning_enabled']) else '❌ OFF'} ({next_morning})\n"
+        f"🌇 <b>Briefing seara:</b> {'✅ ON' if int(user['daily_evening_enabled']) else '❌ OFF'} ({next_evening})\n"
+        f"⚠️ <b>Sever imediat:</b> {'✅ ON' if int(user['severe_immediate_enabled']) else '❌ OFF'}\n"
+        "━━━━━━━━━━━━━━━━━━"
     )
 
     await message.answer(text, reply_markup=get_main_keyboard())

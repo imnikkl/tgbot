@@ -64,19 +64,18 @@ def format_current_weather(forecast: NormalizedForecast) -> str:
     local_dt = _local_dt(point.dt_utc, forecast.timezone_offset_seconds)
 
     report = (
-        f"{get_weather_emoji(point.condition_main)} <b>Vremea in {forecast.city_name}</b>\n"
-        f"Actualizat: {local_dt.strftime('%d.%m %H:%M')}\n"
-        f"──────────────\n"
-        f"<b>Conditii:</b> {point.description.capitalize()}\n"
-        f"<b>Temperatura:</b> {round(point.temp_c)}C <i>(se simte ca {round(point.feels_like_c)}C)</i>\n"
+        f"{get_weather_emoji(point.condition_main)} <b>Vremea în {forecast.city_name}</b>\n"
+        f"<i>Actualizat: {local_dt.strftime('%d.%m %H:%M')}</i>\n"
+        f"━━━━━━━━━━━━━━━━━━\n"
+        f"<b>Condiții:</b> {point.description.capitalize()}\n"
+        f"<b>Temperatură:</b> {round(point.temp_c)}°C <i>(se simte ca {round(point.feels_like_c)}°C)</i>\n"
         f"<b>Umiditate:</b> {round(point.humidity_percent)}%\n"
-        f"<b>Vant:</b> {point.wind_ms:.1f} m/s\n"
+        f"<b>Vânt:</b> {point.wind_ms:.1f} m/s\n"
         f"<b>Ploaie 3h:</b> {point.rain_mm_3h:.1f} mm\n"
         f"<b>Ninsoare 3h:</b> {point.snow_mm_3h:.1f} mm\n\n"
-        f"🌅 <b>Rasarit:</b> {_sun_label(forecast.sunrise_utc, forecast.timezone_offset_seconds)}"
+        f"🌅 <b>Răsărit:</b> {_sun_label(forecast.sunrise_utc, forecast.timezone_offset_seconds)}"
         f" | 🌇 <b>Apus:</b> {_sun_label(forecast.sunset_utc, forecast.timezone_offset_seconds)}\n\n"
-        f"💡 <i>Sfat:</i> {get_clothing_advice(point.condition_main, point.temp_c)}\n"
-        f"──────────────"
+        f"<blockquote expand=\"True\">💡 <b>Sfat:</b> {get_clothing_advice(point.condition_main, point.temp_c)}</blockquote>"
     )
     return report
 
@@ -109,16 +108,15 @@ def format_tomorrow_weather(forecast: NormalizedForecast) -> str:
     local_noon = _local_dt(noon_target.dt_utc, forecast.timezone_offset_seconds)
 
     return (
-        f"📅 <b>Prognoza de maine ({local_noon.strftime('%d.%m')})</b>\n"
+        f"📅 <b>Prognoza de mâine ({local_noon.strftime('%d.%m')})</b>\n"
         f"📍 <b>{forecast.city_name}</b>\n"
-        f"──────────────\n"
-        f"{get_weather_emoji(noon_target.condition_main)} <b>Conditii:</b> {noon_target.description.capitalize()}\n"
-        f"🌡️ <b>Temperatura (aprox. la pranz):</b> {round(noon_target.temp_c)}C "
-        f"<i>(se simte ca {round(noon_target.feels_like_c)}C)</i>\n"
+        f"━━━━━━━━━━━━━━━━━━\n"
+        f"{get_weather_emoji(noon_target.condition_main)} <b>Condiții:</b> {noon_target.description.capitalize()}\n"
+        f"🌡️ <b>Temperatură (aprox. la prânz):</b> {round(noon_target.temp_c)}°C "
+        f"<i>(se simte ca {round(noon_target.feels_like_c)}°C)</i>\n"
         f"💧 <b>Umiditate:</b> {round(noon_target.humidity_percent)}%\n"
-        f"🌬️ <b>Vant:</b> {noon_target.wind_ms:.1f} m/s\n\n"
-        f"💡 <i>Sfat:</i> {get_clothing_advice(noon_target.condition_main, noon_target.temp_c)}\n"
-        f"──────────────"
+        f"🌬️ <b>Vânt:</b> {noon_target.wind_ms:.1f} m/s\n\n"
+        f"<blockquote expand=\"True\">💡 <b>Sfat:</b> {get_clothing_advice(noon_target.condition_main, noon_target.temp_c)}</blockquote>"
     )
 
 
@@ -150,8 +148,8 @@ def format_3days_weather(forecast: NormalizedForecast) -> str:
     if not daily:
         return "Nu exista suficiente date pentru urmatoarele 3 zile."
 
-    days_ro = ["Luni", "Marti", "Miercuri", "Joi", "Vineri", "Sambata", "Duminica"]
-    lines = [f"🗓️ <b>Prognoza pe 3 zile in {forecast.city_name}</b>", "──────────────", ""]
+    days_ro = ["Luni", "Marți", "Miercuri", "Joi", "Vineri", "Sâmbătă", "Duminică"]
+    lines = [f"🗓️ <b>Prognoza pe 3 zile în {forecast.city_name}</b>", "━━━━━━━━━━━━━━━━━━", ""]
 
     selected_dates = sorted(daily.keys())[:3]
     for date_key in selected_dates:
@@ -168,8 +166,8 @@ def format_3days_weather(forecast: NormalizedForecast) -> str:
         emoji = get_weather_emoji(condition)
 
         lines.append(f"<b>{day_name} ({payload['date_display']})</b> {emoji}")
-        lines.append(f"🌡️ {min_temp}C - {max_temp}C")
+        lines.append(f"🌡️ {min_temp}°C - {max_temp}°C")
         lines.append("")
 
-    lines.append("──────────────")
+    lines.append("━━━━━━━━━━━━━━━━━━")
     return "\n".join(lines)
