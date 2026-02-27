@@ -14,6 +14,7 @@ from migrations.runner import run_migrations
 from repositories.user_repo import UserRepository
 from scheduler import setup_scheduler
 from services.alert_engine import AlertEngine
+from services.ai_service import AiService
 from services.weather_service import OpenMeteoProvider, OpenWeatherProvider, WeatherService
 
 
@@ -53,6 +54,7 @@ async def main() -> None:
         )
 
         alert_engine = AlertEngine()
+        ai_service = AiService(settings.gemini_api_key)
 
         bot = create_bot(settings.bot_token)
         dp = create_dispatcher()
@@ -62,6 +64,7 @@ async def main() -> None:
             weather_service=weather_service,
             http_session=http_session,
             alert_engine=alert_engine,
+            ai_service=ai_service,
             morning_hour=settings.morning_hour,
             morning_minute=settings.morning_minute,
             evening_hour=settings.evening_hour,

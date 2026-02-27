@@ -15,6 +15,7 @@ LOGGER = logging.getLogger(__name__)
 class Settings:
     bot_token: str
     weather_api_key: str | None
+    gemini_api_key: str | None
     location_enc_key: bytes
     db_path: str
     timezone_name: str
@@ -88,9 +89,14 @@ def load_settings() -> Settings:
             "WEATHER_API_KEY nu este setata. OpenWeather va fi omis, fallback la Open-Meteo."
         )
 
+    gemini_api_key = os.getenv("GEMINI_API_KEY")
+    if not gemini_api_key:
+        LOGGER.warning("GEMINI_API_KEY nu este setata. Functionalitatea AI va fi indisponibila.")
+
     return Settings(
         bot_token=bot_token,
         weather_api_key=weather_api_key.strip() if weather_api_key else None,
+        gemini_api_key=gemini_api_key.strip() if gemini_api_key else None,
         location_enc_key=_decode_location_key(location_key_raw),
         db_path=os.getenv("DB_PATH", "weather_bot.db"),
         timezone_name=os.getenv("APP_TIMEZONE", "Europe/Bucharest"),

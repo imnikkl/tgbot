@@ -13,6 +13,7 @@ from aiogram.types import BotCommand, KeyboardButton, ReplyKeyboardMarkup
 from repositories.user_repo import UserRepository
 from services.alert_engine import AlertEngine
 from services.weather_service import WeatherService
+from services.ai_service import AiService
 from weather import format_3days_weather, format_current_weather, format_tomorrow_weather
 
 
@@ -24,6 +25,7 @@ _user_repo: UserRepository | None = None
 _weather_service: WeatherService | None = None
 _http_session: aiohttp.ClientSession | None = None
 _alert_engine: AlertEngine | None = None
+_ai_service: AiService | None = None
 _morning_hour = 7
 _morning_minute = 30
 _evening_hour = 19
@@ -36,6 +38,7 @@ def configure_handlers(
     weather_service: WeatherService,
     http_session: aiohttp.ClientSession,
     alert_engine: AlertEngine,
+    ai_service: AiService,
     morning_hour: int = 7,
     morning_minute: int = 30,
     evening_hour: int = 19,
@@ -47,6 +50,7 @@ def configure_handlers(
     _weather_service = weather_service
     _http_session = http_session
     _alert_engine = alert_engine
+    _ai_service = ai_service
     _morning_hour = morning_hour
     _morning_minute = morning_minute
     _evening_hour = evening_hour
@@ -469,7 +473,28 @@ async def cmd_status(message: types.Message) -> None:
 
 @router.message()
 async def fallback_handler(message: types.Message) -> None:
-    await message.answer(
-        "Nu am inteles comanda. Foloseste /help pentru instructiuni.",
-        reply_markup=get_main_keyboard(),
+    user_repo, weather_service, session, _ = _deps()
+    user = await user_repo.get_user(message.from_user.id)
+    
+    if not user or not _ai_service or not _ai_service.is_configured:
+        await message.answer(
+            "Nu am inteles comanda. Foloseste /help pentru instructiuni.",
+            reply_markup=get_main_keyboard(),
+        )
+        return
+
+    await _send_typing(message)
+    
+    forecast = await weather_service.get_forecast(user["latitude"], user["longitude"], session)
+    if not forecast:
+        await message.answer("Nu am putut prelua datele meteo momentan pentru a raspunde intrebarii.", reply_markup=get_main_keyboard())
+        return
+
+    weather_context = format_current_weather(forecast) + "\n\n" + format_tomorrow_weather(forecast)
+
+    response = await _ai_service.get_intelligent_response(
+        question=message.text or "",
+        weather_context=weather_context
     )
+    
+    await message.answer(response, reply_markup=get_main_keyboard())
