@@ -44,7 +44,7 @@ def configure_handlers(
     evening_hour: int = 19,
     evening_minute: int = 30,
 ) -> None:
-    global _user_repo, _weather_service, _http_session, _alert_engine
+    global _user_repo, _weather_service, _http_session, _alert_engine, _ai_service
     global _morning_hour, _morning_minute, _evening_hour, _evening_minute
     _user_repo = user_repo
     _weather_service = weather_service
