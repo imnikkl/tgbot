@@ -13,7 +13,7 @@ class AiService:
 
         try:
             genai.configure(api_key=api_key)
-            self.model = genai.GenerativeModel("gemini-1.5-flash")
+            self.model = genai.GenerativeModel("gemini-1.5-flash-latest")
             self._is_configured = True
             LOGGER.info("AI Service a fost configurat cu succes.")
         except Exception as exc:
